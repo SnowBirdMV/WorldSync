@@ -1,0 +1,7 @@
+local_world/*
+server/*
+.env
+.idea/*
+logs/*
+!logs/
+waypoints.json
