@@ -2,7 +2,7 @@
 app/tasks/background_worker.py
 
 Contains the background worker logic that processes queued world merges
-via Amulet, then triggers chunk-by-chunk Dynmap renders.
+via Amulet.
 """
 
 import queue
@@ -12,24 +12,20 @@ import zipfile
 import logging
 
 from threading import Lock
-from collections import defaultdict
 
 import amulet
 from amulet.api.errors import ChunkLoadError, ChunkDoesNotExist
 
-from app.utils.amulet_merge import merge_amulet_worlds, is_chunk_empty
-from app.utils.dynmap import chunk_by_chunk_dynmap
+from app.utils.amulet_merge import merge_amulet_worlds
 from app.config import LOCAL_WORLD_DIR
 
 process_queue = queue.Queue()
 lock = Lock()
 
-
 def background_worker():
     """
     Wait for zip paths in process_queue, process each in FIFO,
-    merge them into local_world with Amulet, chunk-by-chunk radiusrender,
-    waiting after each chunk until done, then move to next ZIP.
+    merge them into local_world with Amulet. (No Dynmap references.)
     """
     while True:
         zip_path = process_queue.get()  # Block until an item arrives
@@ -46,12 +42,10 @@ def background_worker():
             logging.warning(f"Failed to delete {zip_path}: {e}")
         process_queue.task_done()
 
-
 def process_zip(zip_path):
     """
     Extracts the uploaded world, merges with local_world using Amulet,
-    then does chunk-by-chunk radiusrender. Each chunk waits for Dynmap to finish
-    before going on to the next chunk.
+    then saves.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         extracted_dir = os.path.join(tmpdir, "extracted_world")
@@ -61,12 +55,8 @@ def process_zip(zip_path):
         uploaded_world = amulet.load_level(extracted_dir)
         local_world = amulet.load_level(LOCAL_WORLD_DIR)
 
-        updated_chunks = merge_amulet_worlds(uploaded_world, local_world)
+        merge_amulet_worlds(uploaded_world, local_world)
 
         local_world.save()
         local_world.close()
         uploaded_world.close()
-
-    # RCON to Dynmap for each chunk
-    if updated_chunks:
-        chunk_by_chunk_dynmap(updated_chunks)

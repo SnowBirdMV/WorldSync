@@ -6,11 +6,9 @@ which is queued for background merging using Amulet.
 """
 
 from flask import Blueprint, request, jsonify
-
 from app.tasks.background_worker import process_queue
 
 merges_bp = Blueprint('merges', __name__)
-
 
 @merges_bp.route("/merge", methods=["POST"])
 def merge_worlds():

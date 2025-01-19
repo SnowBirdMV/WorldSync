@@ -18,12 +18,7 @@ from app.tasks.background_worker import background_worker, process_queue
 # Load environment variables from .env file as soon as possible
 load_dotenv()
 
-
 def create_app():
-    """
-    Creates and configures the Flask application, including logging
-    and registering blueprints/routes.
-    """
     # Ensure the logging directory exists
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
@@ -31,14 +26,14 @@ def create_app():
     # Configure logging
     logging.basicConfig(
         filename=os.path.join(LOG_DIR, LOG_FILE),
-        level=logging.DEBUG,  # Set to DEBUG for detailed logs
+        level=logging.DEBUG,
         format='%(asctime)s %(levelname)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
     app = Flask(__name__)
 
-    # Register Blueprints (Waypoints, Merges, etc.)
+    # Register Blueprints
     from app.routes.waypoints import waypoints_bp
     from app.routes.merges import merges_bp
 

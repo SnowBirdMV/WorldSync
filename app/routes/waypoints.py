@@ -1,8 +1,8 @@
 """
 app/routes/waypoints.py
 
-Contains the Flask routes related to receiving, storing, and retrieving waypoints.
-Synchronizes those waypoints with Dynmap via RCON.
+Contains the Flask routes related to receiving, storing, and retrieving waypoints,
+then synchronizes those waypoints to BlueMap config files.
 """
 
 import os
@@ -17,11 +17,10 @@ from app.schemas.warp_schema import WarpSchema
 from app.config import (
     DATA_FILE,
     DISTANCE_THRESHOLD,
-    DEFAULT_DIMENSION,
-    API_KEY
+    DEFAULT_DIMENSION
 )
-from app.utils.rcon_helper import sync_waypoints
 from app.routes.auth import require_api_key
+from app.utils.bluemap_helper import sync_waypoints_bluemap
 
 waypoints_bp = Blueprint('waypoints', __name__)
 
@@ -41,11 +40,9 @@ if os.path.exists(DATA_FILE):
 else:
     waypoints = []
 
-
 def save_waypoints():
     with open(DATA_FILE, 'w') as f:
         json.dump(waypoints, f, indent=4)
-
 
 def is_far_enough(new_wp, existing_wp):
     """Check if new_wp is more than DISTANCE_THRESHOLD blocks from existing_wp (same dimension)."""
@@ -58,16 +55,13 @@ def is_far_enough(new_wp, existing_wp):
     )
     return distance > DISTANCE_THRESHOLD
 
-
-# Single instance schema
 warp_schema = WarpSchema()
-
 
 @waypoints_bp.route('/waypoints', methods=['POST'])
 @require_api_key
 def receive_waypoints():
     """
-    Endpoint to receive and process a list of waypoints, then sync them to Dynmap.
+    Endpoint to receive and process a list of waypoints, then sync them to BlueMap.
     """
     global waypoints
     data = request.get_json()
@@ -91,16 +85,16 @@ def receive_waypoints():
         z = warp['z']
         dimension = warp['dimension']
 
+        # Basic coordinate sanity check
         MIN_COORD = -30000000
         MAX_COORD = 30000000
         MIN_Y = 0
         MAX_Y = 256
-
         if not (MIN_COORD <= x <= MAX_COORD and MIN_COORD <= z <= MAX_COORD and MIN_Y <= y <= MAX_Y):
             logging.warning(f"Invalid coords for warp '{warp_name}': x={x},y={y},z={z}")
             continue
 
-        # Find existing warp with same name & dimension
+        # Check if we already have a warp by this name + dimension
         existing_warp = next(
             (wp for wp in waypoints
              if wp['name'].lower() == warp_name.lower() and wp.get('dimension', DEFAULT_DIMENSION) == dimension),
@@ -108,7 +102,7 @@ def receive_waypoints():
         )
 
         if existing_warp:
-            # Update if far enough
+            # Update if distance is large enough
             if is_far_enough({'x': x, 'y': y, 'z': z, 'dimension': dimension}, existing_warp):
                 existing_warp.update({'x': x, 'y': y, 'z': z})
                 updated_count += 1
@@ -125,10 +119,10 @@ def receive_waypoints():
             })
             added_count += 1
 
-    # Only save & sync if anything changed
+    # Only save & sync if something changed
     if updated_count > 0 or added_count > 0:
         save_waypoints()
-        sync_waypoints(waypoints)
+        sync_waypoints_bluemap(waypoints)
 
     message = f"Processed {len(data)} warps. Updated: {updated_count}, Added: {added_count}."
     logging.info(message)
