@@ -1,46 +1,24 @@
-"""
-app/__init__.py
-
-Sets up the Flask application by creating and configuring the app instance,
-initializing logging, environment variables, and starting the background worker.
-"""
-
 import os
 import logging
 import threading
-
 from flask import Flask
 from dotenv import load_dotenv
 
-from app.config import LOG_DIR, LOG_FILE
-from app.tasks.background_worker import background_worker, process_queue
-
-# Load environment variables from .env file as soon as possible
-load_dotenv()
+from app.tasks.background_worker import background_worker
+from app.routes.waypoints import waypoints_bp
+from app.routes.merges import merges_bp
+# from app.config import LOG_DIR, LOG_FILE  # no rotation logic in here
 
 def create_app():
-    # Ensure the logging directory exists
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-
-    # Configure logging
-    logging.basicConfig(
-        filename=os.path.join(LOG_DIR, LOG_FILE),
-        level=logging.DEBUG,
-        format='%(asctime)s %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+    load_dotenv()
 
     app = Flask(__name__)
 
     # Register Blueprints
-    from app.routes.waypoints import waypoints_bp
-    from app.routes.merges import merges_bp
-
     app.register_blueprint(waypoints_bp, url_prefix='/api')
     app.register_blueprint(merges_bp)
 
-    # Start background worker thread for Amulet merges
+    # Start background worker
     worker_thread = threading.Thread(target=background_worker, daemon=True)
     worker_thread.start()
 

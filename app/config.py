@@ -8,7 +8,7 @@ import os
 
 # Directory for logging
 LOG_DIR = 'logs'
-LOG_FILE = 'warp_server.log'
+LOG_FILE = 'latest.log'
 
 # Data file for storing waypoints
 DATA_FILE = 'waypoints.json'
