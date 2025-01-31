@@ -139,8 +139,8 @@ def build_warp_markers_block(waypoints):
         html_content = f"""
             <div style='
                 background: rgba(0, 0, 0, 0.4);
-                border: 2px solid white;
-                border-radius: 2px;
+                border: 1px rgba(255, 255, 255, 0.6);
+                border-radius: 5px;
                 padding: 2px 2px;
                 color: white;
                 text-align: center;
