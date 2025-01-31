@@ -125,7 +125,7 @@ def update_conf_with_waypoints(conf_lines, waypoints):
 def build_warp_markers_block(waypoints):
     """
     Builds the lines defining all warp-markers for the given list of waypoints
-    as "html" markers.
+    as "html" markers with custom styling.
     """
     lines = []
     for wp in waypoints:
@@ -135,18 +135,36 @@ def build_warp_markers_block(waypoints):
         z = wp['z']
         label = wp['name']
 
+        # Updated HTML styling
+        html_content = f"""
+            <div style='
+                background: rgba(0, 0, 0, 0.7);
+                border: 2px solid white;
+                border-radius: 10px;
+                padding: 4px 8px;
+                color: white;
+                text-align: center;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+                display: inline-block;
+                white-space: nowrap;
+                backdrop-filter: blur(2px);
+            '>
+                {label}
+            </div>
+        """.replace('\n', '').strip()  # Remove newlines for clean formatting
+
         lines.append(f"                {marker_id}: {{")
         lines.append(f"                    type: \"html\"")
         lines.append(f"                    position: {{ x: {x}, y: {y}, z: {z} }}")
         lines.append(f"                    label: \"{label}\"")
-        # For HTML content, you can add more advanced styling if desired:
-        lines.append(f"                    html: \"<div style='color: white;'>{label}</div>\"")
-        lines.append(f"                    anchor: {{ x: 0, y: 0 }}")
+        lines.append(f"                    html: \"{html_content}\"")
+        lines.append(f"                    anchor: {{ x: 0.5, y: 0.5 }}")  # Centered anchor
         lines.append(f"                    sorting: 0")
         lines.append(f"                    listed: true")
         lines.append(f"                    min-distance: 0")
         lines.append(f"                    max-distance: 10000000")
         lines.append(f"                }}")
 
-    # Return as a single string with newlines
     return "\n".join(lines) + "\n"

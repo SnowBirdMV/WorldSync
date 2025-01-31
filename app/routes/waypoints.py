@@ -1,18 +1,10 @@
-"""
-app/routes/waypoints.py
-
-Contains the Flask routes related to receiving, storing, and retrieving waypoints,
-then synchronizes those waypoints to BlueMap config files.
-"""
-
+# app/routes/waypoints.py
 import os
 import json
 import logging
 from math import sqrt
-
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
-
 from app.schemas.warp_schema import WarpSchema
 from app.config import (
     DATA_FILE,
@@ -24,11 +16,10 @@ from app.utils.bluemap_helper import sync_waypoints_bluemap
 
 waypoints_bp = Blueprint('waypoints', __name__)
 
-# Load any existing waypoints at import-time
+# Load existing waypoints (existing code remains the same)
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, 'r') as f:
         waypoints = json.load(f)
-    # Ensure all waypoints have 'dimension'
     updated = False
     for wp in waypoints:
         if 'dimension' not in wp:
@@ -45,9 +36,9 @@ def save_waypoints():
         json.dump(waypoints, f, indent=4)
 
 def is_far_enough(new_wp, existing_wp):
-    """Check if new_wp is more than DISTANCE_THRESHOLD blocks from existing_wp (same dimension)."""
+    """Existing implementation remains the same"""
     if new_wp['dimension'] != existing_wp['dimension']:
-        return True  # Different dimension => no conflict
+        return True
     distance = sqrt(
         (new_wp['x'] - existing_wp['x']) ** 2 +
         (new_wp['y'] - existing_wp['y']) ** 2 +
@@ -60,17 +51,19 @@ warp_schema = WarpSchema()
 @waypoints_bp.route('/waypoints', methods=['POST'])
 @require_api_key
 def receive_waypoints():
-    """
-    Endpoint to receive and process a list of waypoints, then sync them to BlueMap.
-    """
+    """Updated endpoint with force-refresh support"""
     global waypoints
     data = request.get_json()
+
+    # Get force-refresh parameter from query string
+    force_refresh = request.args.get('force-refresh', 'false').lower() == 'true'
 
     if not data or not isinstance(data, list):
         return jsonify({'error': 'Expected a JSON list of warps'}), 400
 
     updated_count = 0
     added_count = 0
+    changes_detected = False
 
     for warp_data in data:
         try:
@@ -85,7 +78,7 @@ def receive_waypoints():
         z = warp['z']
         dimension = warp['dimension']
 
-        # Basic coordinate sanity check
+        # Existing validation checks remain the same
         MIN_COORD = -30000000
         MAX_COORD = 30000000
         MIN_Y = 0
@@ -94,7 +87,6 @@ def receive_waypoints():
             logging.warning(f"Invalid coords for warp '{warp_name}': x={x},y={y},z={z}")
             continue
 
-        # Check if we already have a warp by this name + dimension
         existing_warp = next(
             (wp for wp in waypoints
              if wp['name'].lower() == warp_name.lower() and wp.get('dimension', DEFAULT_DIMENSION) == dimension),
@@ -102,14 +94,13 @@ def receive_waypoints():
         )
 
         if existing_warp:
-            # Update if distance is large enough
             if is_far_enough({'x': x, 'y': y, 'z': z, 'dimension': dimension}, existing_warp):
                 existing_warp.update({'x': x, 'y': y, 'z': z})
                 updated_count += 1
+                changes_detected = True
             else:
                 logging.info(f"Warp '{warp_name}' not updated. Distance <= {DISTANCE_THRESHOLD}.")
         else:
-            # Add new warp
             waypoints.append({
                 'name': warp_name,
                 'x': x,
@@ -118,18 +109,25 @@ def receive_waypoints():
                 'dimension': dimension
             })
             added_count += 1
+            changes_detected = True
 
-    # Only save & sync if something changed
-    if updated_count > 0 or added_count > 0:
-        save_waypoints()
+    # Save if changes detected or forced refresh
+    if changes_detected or force_refresh:
+        if changes_detected:
+            save_waypoints()
+            logging.info(f"Saving {len(waypoints)} waypoints to disk")
+
+        logging.info(f"Syncing waypoints to BlueMap (force={force_refresh})")
         sync_waypoints_bluemap(waypoints)
 
-    message = f"Processed {len(data)} warps. Updated: {updated_count}, Added: {added_count}."
+    message = f"Processed {len(data)} warps. Updated: {updated_count}, Added: {added_count}"
+    if force_refresh:
+        message += " | Forced BlueMap refresh"
+
     logging.info(message)
     return jsonify({'message': message}), 200
 
-
 @waypoints_bp.route('/waypoints', methods=['GET'])
 def get_waypoints_api():
-    """Returns the current list of waypoints."""
+    """Existing implementation remains the same"""
     return jsonify(waypoints), 200
