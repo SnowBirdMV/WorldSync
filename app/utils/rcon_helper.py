@@ -23,7 +23,7 @@ def bluemap_reload():
     """
     try:
         with rcon_client() as client:
-            response = client.run("bluemap reload")
+            response = client.run("bluemap reload light")
             logging.info(f"Executed bluemap reload -> Response: {response}")
     except Exception as e:
         logging.error(f"Failed to reload BlueMap via RCON: {e}", exc_info=True)
