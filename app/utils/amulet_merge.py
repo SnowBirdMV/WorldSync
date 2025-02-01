@@ -11,7 +11,11 @@ def merge_amulet_worlds(uploaded_world, local_world):
     Overwrites local chunks with the uploaded chunks (unconditionally).
     If the uploaded dimension is "minecraft:ultra_space", treat it
     as "pixelmon:ultra_space" in the local world.
+
+    Returns:
+        A list of tuples (effective_dimension, chunk_x, chunk_z) for each merged chunk.
     """
+    merged_chunks = []
     for dimension in uploaded_world.dimensions:
         # Remap "minecraft:ultra_space" -> "pixelmon:ultra_space"
         if dimension == "minecraft:ultra_space":
@@ -27,6 +31,8 @@ def merge_amulet_worlds(uploaded_world, local_world):
                 continue
             if not is_chunk_empty(uploaded_chunk):
                 local_world.put_chunk(uploaded_chunk, effective_dimension)
+                merged_chunks.append((effective_dimension, cx, cz))
+    return merged_chunks
 
 def is_chunk_empty(chunk):
     """Basic check if chunk is 'empty' (no block data)."""

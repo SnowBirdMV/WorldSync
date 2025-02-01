@@ -21,7 +21,7 @@ DIMENSION_TO_BLUEMAP_CONF = {
     'minecraft:overworld': os.getenv("BLUEMAP_CONF_OVERWORLD", "world.conf"),
     'minecraft:the_nether': os.getenv("BLUEMAP_CONF_NETHER", "dim-1.conf"),
     'minecraft:the_end': os.getenv("BLUEMAP_CONF_END", "dim1.conf"),
-    'pixelmon:ultra_space': os.getenv("BLUEMAP_CONF_ULTRA_SPACE", "ultra_space.conf")
+    'pixelmon:ultra_space': os.getenv("BLUEMAP_CONF_ULTRASPACE", "ultra_space.conf")
 }
 BLUEMAP_MAPS_PATH = os.getenv(
     "BLUEMAP_MAPS_PATH",
@@ -34,3 +34,12 @@ RCON_PASSWORD = os.getenv("RCON_PASSWORD", "default_password")
 API_KEY = os.getenv("API_KEY", "your-default-api-key")
 LOCAL_WORLD_DIR = os.getenv("LOCAL_WORLD_DIR", "local_world")
 DATA_FILE = os.getenv("DATA_FILE", "waypoints.json")
+
+# New mapping for dimension world folders used in lighting updates.
+# These map the dimension IDs to the actual world folder paths used in the cleanlight command.
+DIMENSION_TO_WORLD_PATH = {
+    "minecraft:overworld": os.getenv("DIMENSION_WORLD_OVERWORLD", "world"),
+    "minecraft:the_nether": os.getenv("DIMENSION_WORLD_NETHER", "world/DIM-1"),
+    "minecraft:the_end": os.getenv("DIMENSION_WORLD_END", "world/DIM1"),
+    "pixelmon:ultra_space": os.getenv("DIMENSION_WORLD_ULTRASPACE", "world/dimensions/pixelmon/ultra_space")
+}
