@@ -30,10 +30,26 @@ def merge_worlds():
 
 @merges_bp.route("/merge/status", methods=["GET"])
 def merge_status():
-    current = get_current_job()
+    job = get_current_job()
     pending = get_pending_jobs()
+
+    # Only include chunk info if the current stage is 'amulet merge'
+    if job and job.get("stage") == "amulet merge":
+        total_chunks = job.get("total_chunks")
+        current_chunk = job.get("current_chunk")
+    else:
+        total_chunks = None
+        current_chunk = None
+
+    # Only include render progress if the current stage is 'bluemap render'
+    render_progress = job.get("render_progress") if job and job.get("stage") == "bluemap render" else None
+
     return jsonify({
-        "current_job": current,
+        "current_job": job.get("current_job") if job else None,
+        "stage": job.get("stage") if job else None,
+        "total_chunks": total_chunks,
+        "current_chunk": current_chunk,
+        "render_progress": render_progress,
         "pending_jobs": pending,
         "queue_size": len(pending)
     }), 200
